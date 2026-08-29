@@ -1,0 +1,10 @@
+*.retry
+retry/
+ansible.log
+.facts_cache/
+failed_hosts.txt
+unreachable_hosts.txt
+*.pem
+id_*
+!*.pub
+vault_pass.txt

@@ -1,0 +1,6 @@
+---
+# Modul authorized_key sejak ansible-core 2.10 ada di collection ansible.posix.
+# Install: ansible-galaxy collection install -r requirements.yml
+collections:
+  - name: ansible.posix
+    version: ">=1.5.4"

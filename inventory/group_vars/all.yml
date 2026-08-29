@@ -1,0 +1,38 @@
+---
+# =============================================================
+#  VARIABEL GLOBAL — berlaku untuk semua host di inventory
+#  Override per grup: bikin file inventory/group_vars/<nama_grup>.yml
+# =============================================================
+
+# ---------- Koneksi ----------
+ansible_user: admincitis        # user untuk LOGIN SSH
+ansible_port: 22
+
+# Private key milik controller untuk masuk ke server.
+# Public key pasangannya HARUS sudah ada di authorized_keys server;
+# kalau belum, jalankan run pertama dengan --ask-pass (butuh sshpass).
+# Di WSL: salin key ke ~/.ssh dan chmod 600, jangan tunjuk ke /mnt/c/...
+ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+
+# Lewat bastion / jump host (opsional)
+# ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q admincitis@bastion.example.com"'
+
+# ---------- Key yang dipasang ----------
+# User yang authorized_keys-nya DIUBAH (beda peran dengan ansible_user di atas).
+ssh_key_user: admincitis
+
+# Daftar file public key di controller.
+# NAMA FILE menentukan baris komentar di authorized_keys:
+#   files/pubkeys/romi.pub  ->  #romi
+#                               ssh-rsa AAAAB3Nza... ansible@app
+# Isi tiap file: SATU public key saja, tanpa baris komentar di dalamnya.
+ssh_key_files:
+  - files/pubkeys/admincitis.pub
+  # - files/pubkeys/romi.pub
+  # - files/pubkeys/daus.pub
+
+# present = tambah | absent = cabut key (offboarding)
+ssh_key_state: present
+
+# true kalau ssh_key_user BERBEDA dari ansible_user (butuh sudo untuk tulis ke home user lain)
+ssh_key_become: false

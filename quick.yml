@@ -1,0 +1,50 @@
+---
+# =============================================================
+#  Pasang public key ke ~/.ssh/authorized_keys
+#
+#  Hasil di server:
+#      #romi
+#      ssh-rsa AAAAB3Nza... ansible@app
+#
+#  Nama komentar diambil dari NAMA FILE .pub -> romi.pub jadi "#romi".
+#  Isi tiap file .pub: SATU key saja, tanpa baris komentar.
+#
+#  Dry-run  : ansible-playbook quick.yml --check --diff
+#  Eksekusi : ansible-playbook quick.yml
+# =============================================================
+
+- name: Pasang public key ke authorized_keys
+  hosts: all
+  gather_facts: false          # <- ini yang bikin cepat
+  ignore_unreachable: true     # host mati tidak menggagalkan seluruh run
+
+  tasks:
+    - name: "{{ 'Tambah' if ssh_key_state == 'present' else 'Cabut' }} public key"
+      ansible.posix.authorized_key:
+        user: "{{ ssh_key_user }}"
+        key: "{{ lookup('file', item) }}"
+        state: "{{ ssh_key_state }}"
+        exclusive: false       # JANGAN true: key lain akan terhapus
+        manage_dir: true       # bikin ~/.ssh 0700 + authorized_keys 0600, owner benar
+      loop: "{{ ssh_key_files }}"
+      loop_control:
+        label: "{{ item | basename }}"
+      become: "{{ ssh_key_become | bool }}"
+      register: ak
+
+    - name: Sisipkan baris "#nama" tepat di atas key-nya
+      ansible.builtin.lineinfile:
+        # keyfile = path authorized_keys sebenarnya, dilaporkan oleh task di atas.
+        # Dipakai supaya tidak perlu menebak home directory user.
+        path: "{{ item.keyfile }}"
+        line: "#{{ item.item | basename | splitext | first }}"
+        insertbefore: "^{{ lookup('file', item.item) | trim | regex_escape }}$"
+        firstmatch: true
+        state: "{{ ssh_key_state }}"
+        mode: "0600"
+        owner: "{{ ssh_key_user if (ssh_key_become | bool) else omit }}"
+      loop: "{{ ak.results }}"
+      loop_control:
+        label: "#{{ item.item | basename | splitext | first }}"
+      become: "{{ ssh_key_become | bool }}"
+      when: item.keyfile is defined
